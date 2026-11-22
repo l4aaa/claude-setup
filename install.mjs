@@ -9,7 +9,8 @@ const flags = new Set(process.argv.slice(2));
 const dryRun = flags.has('--dry-run') || flags.has('--diff');
 const FILES = ['CLAUDE.md', 'settings.json'];
 const MARKETPLACE = 'l4aaa/claude-setup';
-const PLUGIN = 'guardrails@l4aaa-toolkit';
+const MARKETPLACE_NAME = 'l4aaa-toolkit';
+const PLUGIN = `guardrails@${MARKETPLACE_NAME}`;
 
 function syncFile(name) {
   const src = join(root, 'config', name);
@@ -24,6 +25,16 @@ function syncFile(name) {
   return `${name}: ${exists ? `updated (backup ${backup})` : 'installed'}`;
 }
 
+function marketplaceKnown(claude) {
+  try {
+    return JSON.parse(exec(claude, ['plugin', 'marketplace', 'list', '--json']).stdout).some(
+      (marketplace) => marketplace.name === MARKETPLACE_NAME,
+    );
+  } catch {
+    return false;
+  }
+}
+
 function installPlugin() {
   const commands = [
     ['plugin', 'marketplace', 'add', MARKETPLACE, '--scope', 'user'],
@@ -32,7 +43,7 @@ function installPlugin() {
   const show = (bin) => commands.map((args) => `  ${bin} ${args.join(' ')}`).join('\n');
   const claude = dryRun ? null : findClaude();
   if (!claude) return `plugin: run these once:\n${show('claude')}`;
-  return commands
+  return (marketplaceKnown(claude) ? commands.slice(1) : commands)
     .map((args) => {
       const { status, stdout, stderr } = exec(claude, args);
       return `plugin: ${args.slice(0, 3).join(' ')} -> ${status === 0 ? 'ok' : `exit ${status}: ${(stderr || stdout).trim()}`}`;
@@ -40,5 +51,6 @@ function installPlugin() {
     .join('\n');
 }
 
+const pluginReport = flags.has('--no-plugin') ? undefined : installPlugin();
 console.log(FILES.map(syncFile).join('\n'));
-if (!flags.has('--no-plugin')) console.log(installPlugin());
+if (pluginReport) console.log(pluginReport);
