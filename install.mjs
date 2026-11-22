@@ -13,11 +13,32 @@ const FILES = ['CLAUDE.md', 'settings.json'];
 const MARKETPLACE = 'l4aaa/claude-setup';
 const PLUGIN = 'guardrails@l4aaa-toolkit';
 
+const canonical = (value) => {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, canonical(item)]),
+    );
+  }
+  return value;
+};
+
+function sameContent(name, a, b) {
+  if (!name.endsWith('.json')) return a.equals(b);
+  try {
+    return JSON.stringify(canonical(JSON.parse(a))) === JSON.stringify(canonical(JSON.parse(b)));
+  } catch {
+    return false;
+  }
+}
+
 function syncFile(name) {
   const src = join(root, 'config', name);
   const dest = join(claudeDir, name);
   const exists = existsSync(dest);
-  if (exists && readFileSync(src).equals(readFileSync(dest))) return `${name}: unchanged`;
+  if (exists && sameContent(name, readFileSync(src), readFileSync(dest))) return `${name}: unchanged`;
   const backup = `${dest}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`;
   if (dryRun) return `${name}: would ${exists ? `update (backup ${backup})` : 'install'}`;
   mkdirSync(claudeDir, { recursive: true });
@@ -26,8 +47,7 @@ function syncFile(name) {
   return `${name}: ${exists ? `updated (backup ${backup})` : 'installed'}`;
 }
 
-const exec = (bin, args) =>
-  spawnSync(bin, args, { encoding: 'utf8', shell: bin === 'claude' && process.platform === 'win32' });
+const exec = (bin, args) => spawnSync(bin, args, { encoding: 'utf8' });
 
 function findClaude() {
   if (exec('claude', ['--version']).status === 0) return 'claude';

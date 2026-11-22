@@ -33,6 +33,13 @@ test('installs, then is idempotent', () => {
   assert.deepEqual(readdirSync(dir).filter((f) => f.includes('.bak-')), []);
 });
 
+test('treats reformatted JSON with the same content as unchanged', () => {
+  const reordered = Object.fromEntries(Object.entries(JSON.parse(source('settings.json'))).reverse());
+  writeFileSync(join(dir, 'settings.json'), JSON.stringify(reordered, null, 4));
+  assert.match(install(), /settings\.json: unchanged/);
+  assert.deepEqual(readdirSync(dir).filter((f) => f.includes('.bak-')), []);
+});
+
 test('backs up and overwrites a changed file', () => {
   writeFileSync(join(dir, 'settings.json'), '{"local":true}\n');
   install();
