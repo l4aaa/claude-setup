@@ -1,0 +1,6 @@
+{
+  "name": "guardrails",
+  "description": "Hooks that block access to secrets and risky git operations.",
+  "author": { "name": "Laurentiu Chircan" },
+  "license": "MIT"
+}

@@ -1,0 +1,10 @@
+node_modules/
+.claude/worktrees/
+.claude/settings.local.json
+.claude.json
+*.bak-*
+.env
+.env.*
+!.env.example
+*.pem
+*.key
