@@ -33,7 +33,8 @@
   },
   "extraKnownMarketplaces": {
     "l4aaa-toolkit": {
-      "source": { "source": "github", "repo": "l4aaa/claude-setup" }
+      "source": { "source": "github", "repo": "l4aaa/claude-setup" },
+      "autoUpdate": true
     }
   },
   "enabledPlugins": {

@@ -19,6 +19,10 @@ node install.mjs          # install (backs up changed files as *.bak-<time>)
 
 The installer overwrites `~/.claude/CLAUDE.md` and `~/.claude/settings.json`, and never touches `settings.local.json` or any session data. Put per-machine overrides in `settings.local.json`. If `claude` isn't found it prints the two plugin commands to run.
 
+The marketplace auto-updates in the background, so merged changes to the hooks reach every device. Pull the repo and re-run the installer to update the config files.
+
+Verify a device with `node scripts/check.mjs`. It checks that the config matches the repo, that the plugin is installed and enabled, and that each hook runs and returns the expected exit code. Run it from inside Claude Code to test the same PATH the hooks get; if `node` is missing there, the hooks fail open and the check reports it.
+
 To install only the plugin, in Claude Code:
 
 ```
@@ -30,6 +34,7 @@ To install only the plugin, in Claude Code:
 ```sh
 node --test
 node scripts/validate.mjs
+node scripts/check.mjs
 ```
 
 Changes go through pull requests to `main`; CI must pass.
