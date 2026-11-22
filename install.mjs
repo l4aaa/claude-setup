@@ -1,38 +1,15 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { claudeDir, exec, findClaude, sameContent } from './scripts/shared.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const claudeDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
 const flags = new Set(process.argv.slice(2));
 const dryRun = flags.has('--dry-run') || flags.has('--diff');
 const FILES = ['CLAUDE.md', 'settings.json'];
 const MARKETPLACE = 'l4aaa/claude-setup';
 const PLUGIN = 'guardrails@l4aaa-toolkit';
-
-const canonical = (value) => {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, item]) => [key, canonical(item)]),
-    );
-  }
-  return value;
-};
-
-function sameContent(name, a, b) {
-  if (!name.endsWith('.json')) return a.equals(b);
-  try {
-    return JSON.stringify(canonical(JSON.parse(a))) === JSON.stringify(canonical(JSON.parse(b)));
-  } catch {
-    return false;
-  }
-}
 
 function syncFile(name) {
   const src = join(root, 'config', name);
@@ -45,25 +22,6 @@ function syncFile(name) {
   if (exists) copyFileSync(dest, backup);
   copyFileSync(src, dest);
   return `${name}: ${exists ? `updated (backup ${backup})` : 'installed'}`;
-}
-
-const exec = (bin, args) => spawnSync(bin, args, { encoding: 'utf8' });
-
-function findClaude() {
-  if (exec('claude', ['--version']).status === 0) return 'claude';
-  const base = join(process.env.LOCALAPPDATA ?? '', 'Claude-Data');
-  const list = (dir) => (existsSync(dir) ? readdirSync(dir) : []);
-  const numeric = (a, b) => b.localeCompare(a, undefined, { numeric: true });
-  for (const profile of list(base)) {
-    const versions = join(base, profile, 'claude-code');
-    for (const version of list(versions).sort(numeric)) {
-      for (const build of list(join(versions, version))) {
-        const exe = join(versions, version, build, 'claude.exe');
-        if (existsSync(exe)) return exe;
-      }
-    }
-  }
-  return null;
 }
 
 function installPlugin() {
